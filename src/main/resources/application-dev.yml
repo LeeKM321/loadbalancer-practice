@@ -1,0 +1,21 @@
+# 개발 환경 설정
+server:
+  port: 8080
+  forward-headers-strategy: framework
+
+# Actuator 설정
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: always
+
+# 로깅 설정
+logging:
+  level:
+    com.codeit.loadbalancer: DEBUG
+    org.springframework.web: DEBUG
+    org.springframework.boot.actuate: INFO

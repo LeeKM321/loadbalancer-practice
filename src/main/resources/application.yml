@@ -1,1 +1,8 @@
-spring.application.name=nginx-loadbalancer
+spring:
+  application:
+    name: nginx-loadbalancer
+
+logging:
+  level:
+    com.codeit.loadbalancer: INFO
+    org.springframework.web: INFO

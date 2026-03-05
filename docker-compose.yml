@@ -1,0 +1,137 @@
+# Nginx 로드 밸런서 & Spring Boot 다중 인스턴스 구성
+version: '3.8'
+
+services:
+  # Nginx 로드 밸런서
+  nginx:
+    build:
+      context: ./nginx
+      dockerfile: Dockerfile
+    container_name: nginx-loadbalancer
+    ports:
+      - "80:80"          # HTTP 포트
+    networks:
+      - app-network
+    depends_on:
+      - app-instance-1
+      - app-instance-2
+      - app-instance-3
+    volumes:
+      # 로그 볼륨 (옵션)
+      - ./logs/nginx:/var/log/nginx
+      # 캐시 볼륨 (옵션)
+      - nginx-cache:/var/cache/nginx
+    environment:
+      - TZ=Asia/Seoul
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/nginx_status"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # Spring Boot 인스턴스 1
+  app-instance-1:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: app-instance-1
+    hostname: app-instance-1
+    networks:
+      - app-network
+    volumes:
+      # 로그 볼륨 (옵션)
+      - ./logs/app-1:/app/logs
+    environment:
+      - SPRING_PROFILES_ACTIVE=dev
+      - SERVER_PORT=8080
+      - JAVA_OPTS=-Xms256m -Xmx512m -XX:+UseG1GC
+      - TZ=Asia/Seoul
+      - INSTANCE_NAME=app-instance-1
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Spring Boot 인스턴스 2
+  app-instance-2:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: app-instance-2
+    hostname: app-instance-2
+    networks:
+      - app-network
+    volumes:
+      # 로그 볼륨 (옵션)
+      - ./logs/app-2:/app/logs
+    environment:
+      - SPRING_PROFILES_ACTIVE=dev
+      - SERVER_PORT=8080
+      - JAVA_OPTS=-Xms256m -Xmx512m -XX:+UseG1GC
+      - TZ=Asia/Seoul
+      - INSTANCE_NAME=app-instance-2
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Spring Boot 인스턴스 3
+  app-instance-3:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: app-instance-3
+    hostname: app-instance-3
+    networks:
+      - app-network
+    volumes:
+      # 로그 볼륨 (옵션)
+      - ./logs/app-3:/app/logs
+    environment:
+      - SPRING_PROFILES_ACTIVE=dev
+      - SERVER_PORT=8080
+      - JAVA_OPTS=-Xms256m -Xmx512m -XX:+UseG1GC
+      - TZ=Asia/Seoul
+      - INSTANCE_NAME=app-instance-3
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+# 네트워크 정의
+networks:
+  app-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+
+# 볼륨 정의
+volumes:
+  nginx-cache:
+    driver: local
+  app-logs:
+    driver: local
+
+# 전역 설정
+x-logging: &default-logging
+  logging:
+    driver: "json-file"
+    options:
+      max-size: "10m"
+      max-file: "3"
+
+# 모든 서비스에 로깅 설정 적용
+x-common-variables: &common-variables
+  <<: *default-logging
